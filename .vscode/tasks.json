@@ -1,0 +1,65 @@
+{
+
+"version": "2.0.0",
+"tasks": [
+  {
+    "label": "MSVC x64 Debug",
+    "type": "shell",
+    "command": "cl",
+    "args": [
+      "/Z7",
+      "/MDd",
+      "/W4",
+      "/EHsc",
+      "/std:c++17",
+      "/Od",
+      "/Fobuild\\",
+      "/Febuild\\",
+      "main.cpp",
+      "/link User32.lib"
+    ],
+    "options": {
+      "shell": {
+        "executable": "C:\\Windows\\System32\\cmd.exe",
+        "args": [
+          "/D",
+          "/C",
+          "CALL \"C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Auxiliary\\Build\\vcvars64.bat\"",
+          "&&"
+        ]
+      }
+    },
+    "group": {
+      "kind": "build",
+      "isDefault": true
+    }
+  },
+  {
+    "label": "MSVC x64 Release",
+    "type": "shell",
+    "command": "cl",
+    "args": [
+      "/MD",
+      "/W4",
+      "/EHsc",
+      "/std:c++17",
+      "/O2",
+      "/link User32.lib",
+      "/o build/test.exe",
+      "main.cpp"
+    ],
+    "options": {
+      "shell": {
+        "executable": "C:\\Windows\\System32\\cmd.exe",
+        "args": [
+          "/D",
+          "/C",
+          "CALL \"C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Auxiliary\\Build\\vcvars64.bat\"",
+          "&&"
+        ]
+      }
+    },
+  }
+]
+
+}
