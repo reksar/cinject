@@ -7,7 +7,7 @@ void PrintMessage(char *buffer)
   printf("%s", buffer);
 }
 
-void main()
+int main()
 {
   char *buffer = "default message";
 
@@ -16,4 +16,6 @@ void main()
     getchar();
     PrintMessage(buffer);
   }
+
+  return 0;
 }
