@@ -2,15 +2,17 @@
 
 #include <stdio.h>
 
-void PrintMessage(char *buffer)
+void PrintMessage(char* buffer)
 {
   printf("%s", buffer);
 }
 
 int main()
 {
-  char *buffer = "default message";
+  char* start = "start message";
+  PrintMessage(start);
 
+  char* buffer = "default message";
   while (true)
   {
     getchar();
