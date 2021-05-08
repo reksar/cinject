@@ -1,12 +1,19 @@
-#include <iostream>
-#include <string_view>
-#include <windows.h>
- 
-int main()
+// https://xakep.ru/2015/08/12/code-injection/
+
+#include <stdio.h>
+
+void PrintMessage(char *buffer)
 {
-    std::string_view s = "Hello world!\n";
-    std::cout << s;
-    MessageBoxW(NULL, L"My message", L"My title", MB_OK);
+  printf("%s", buffer);
+}
+
+void main()
+{
+  char *buffer = "default message";
+
+  while (true)
+  {
     getchar();
-    return 0;
+    PrintMessage(buffer);
+  }
 }
