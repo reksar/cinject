@@ -3,7 +3,7 @@
 "version": "2.0.0",
 "tasks": [
   {
-    "label": "MSVC x64 Debug",
+    "label": "MSVC x64",
     "group": {
       "kind": "build",
       "isDefault": true
@@ -39,12 +39,12 @@
       }
     },
     "presentation": {
-      "echo": true,
+      "echo": false,
       "reveal": "silent",
       "focus": false,
       "panel": "shared",
       "showReuseMessage": true,
-      "clear": false
+      "clear": true
     },
   },
   {
@@ -75,11 +75,11 @@
     },
     "presentation": {
       "echo": true,
-      "reveal": "silent",
-      "focus": false,
+      "reveal": "always",
+      "focus": true,
       "panel": "shared",
       "showReuseMessage": true,
-      "clear": false
+      "clear": true
     },
   }
 ]
