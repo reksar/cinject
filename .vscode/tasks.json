@@ -4,18 +4,28 @@
 "tasks": [
   {
     "label": "MSVC x64 Debug",
+    "group": {
+      "kind": "build",
+      "isDefault": true
+    },
+    "dependsOn": [
+      "test",
+      "injector"
+    ]
+  },
+  {
+    "label": "test",
     "type": "shell",
     "command": "cl",
     "args": [
-      "/Z7",
-      "/MDd",
+      "/MD",
       "/W4",
       "/EHsc",
       "/std:c++17",
-      "/Od",
+      "/O2",
       "/Fobuild\\",
       "/Febuild\\",
-      "main.cpp",
+      "test.cpp",
     ],
     "options": {
       "shell": {
@@ -28,24 +38,29 @@
         ]
       }
     },
-    "group": {
-      "kind": "build",
-      "isDefault": true
-    }
+    "presentation": {
+      "echo": true,
+      "reveal": "silent",
+      "focus": false,
+      "panel": "shared",
+      "showReuseMessage": true,
+      "clear": false
+    },
   },
   {
-    "label": "MSVC x64 Release",
+    "label": "injector",
     "type": "shell",
     "command": "cl",
     "args": [
-      "/MD",
+      "/Z7",
+      "/MDd",
       "/W4",
       "/EHsc",
       "/std:c++17",
-      "/O2",
+      "/Od",
       "/Fobuild\\",
       "/Febuild\\",
-      "main.cpp"
+      "injector.cpp",
     ],
     "options": {
       "shell": {
@@ -57,6 +72,14 @@
           "&&"
         ]
       }
+    },
+    "presentation": {
+      "echo": true,
+      "reveal": "silent",
+      "focus": false,
+      "panel": "shared",
+      "showReuseMessage": true,
+      "clear": false
     },
   }
 ]

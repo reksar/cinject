@@ -9,10 +9,10 @@
     "preLaunchTask": "${defaultBuildTask}",
     "request": "launch",
     "cwd": "${workspaceFolder}/build",
-    "program": "${workspaceFolder}/build/main.exe",
+    "program": "${workspaceFolder}/build/injector.exe",
     "args": [],
-    "stopAtEntry": false,
     "environment": [],
+    "stopAtEntry": false,
     "console": "externalTerminal"
   }
 ]
