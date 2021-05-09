@@ -7,7 +7,7 @@
 #include <Windows.h>
 #include <tlhelp32.h>
 
-DWORD get_PID(CHAR * PrName)
+DWORD get_PID(const char *PrName)
 {
   PROCESSENTRY32 entry;
   entry.dwSize = sizeof(PROCESSENTRY32);
@@ -16,7 +16,7 @@ DWORD get_PID(CHAR * PrName)
   {
     while (Process32Next(snapshot, &entry) == TRUE)
     {
-      if (strcmp(entry.szExeFile, PrName) == 0)
+      if (strcmp((char *)entry.szExeFile, PrName) == 0)
       {
         CloseHandle(snapshot);
         return entry.th32ProcessID;
@@ -27,7 +27,7 @@ DWORD get_PID(CHAR * PrName)
   return NULL;
 }
 
-DWORD GetModuleBase(char *lpModuleName, DWORD dwProcessId)
+DWORD GetModuleBase(const char *lpModuleName, DWORD dwProcessId)
 {
   MODULEENTRY32 lpModuleEntry = { 0 };
   HANDLE hSnapShot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, dwProcessId);
@@ -39,7 +39,7 @@ DWORD GetModuleBase(char *lpModuleName, DWORD dwProcessId)
   BOOL bModule = Module32First(hSnapShot, &lpModuleEntry);
   while (bModule)
   {
-    if (!strcmp(lpModuleEntry.szModule, lpModuleName))
+    if (!strcmp((char *)lpModuleEntry.szModule, lpModuleName))
     {
       CloseHandle(hSnapShot);
       return (DWORD)lpModuleEntry.modBaseAddr;
@@ -52,7 +52,7 @@ DWORD GetModuleBase(char *lpModuleName, DWORD dwProcessId)
 
 int main()
 {
-  char *PrName = "test.exe";
+  const char *PrName = "test.exe";
   DWORD PID;
   if (!(PID = get_PID(PrName)))
   {
