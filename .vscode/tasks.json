@@ -3,18 +3,17 @@
 "version": "2.0.0",
 "tasks": [
   {
-    "label": "MSVC x64",
+    "label": "Compile MSVC x64",
     "group": {
       "kind": "build",
       "isDefault": true
     },
     "dependsOn": [
-      "test",
-      "injector"
+      "Compile injector"
     ]
   },
   {
-    "label": "test",
+    "label": "Compile test",
     "type": "shell",
     "command": "cl",
     "args": [
@@ -25,7 +24,7 @@
       "/O2",
       "/Fobuild\\",
       "/Febuild\\",
-      "test.cpp",
+      "test.cpp"
     ],
     "options": {
       "shell": {
@@ -46,9 +45,10 @@
       "showReuseMessage": true,
       "clear": true
     },
+    "problemMatcher": []
   },
   {
-    "label": "injector",
+    "label": "Compile injector",
     "type": "shell",
     "command": "cl",
     "args": [
@@ -60,7 +60,7 @@
       "/Od",
       "/Fobuild\\",
       "/Febuild\\",
-      "injector.cpp",
+      "injector.cpp"
     ],
     "options": {
       "shell": {
@@ -80,7 +80,7 @@
       "panel": "shared",
       "showReuseMessage": true,
       "clear": true
-    },
+    }
   }
 ]
 

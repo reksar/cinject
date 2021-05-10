@@ -1,13 +1,12 @@
 {
-// See: https://go.microsoft.com/fwlink/?linkid=830387
 
 "version": "0.2.0",
 "configurations": [
   {
     "name": "Windows Debug",
     "type": "cppvsdbg",
-    "preLaunchTask": "${defaultBuildTask}",
     "request": "launch",
+    "preLaunchTask": "${defaultBuildTask}",
     "cwd": "${workspaceFolder}/build",
     "program": "${workspaceFolder}/build/injector.exe",
     "args": [],
