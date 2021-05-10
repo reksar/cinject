@@ -5,18 +5,18 @@
 
 #include <stdio.h>
 
-void PrintMessage(char *buffer)
+void PrintMessage(const char *buffer)
 {
   printf("%s", buffer);
 }
 
 int main()
 {
-  char *start = "start message";
+  const char start[] = "start message";
   PrintMessage(start);
 
-  char *buffer = "default message";
-  while (true)
+  const char buffer[] = "default message";
+  while (1)
   {
     getchar();
     PrintMessage(buffer);
