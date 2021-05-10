@@ -76,8 +76,8 @@ INT main()
     return 3;
   }
 
-  BYTE *pBuffer = pBase + 0x0;
-  BYTE *pfuncPrintMessage = pBase + 0x0;
+  BYTE *pBuffer = pBase + 0x2238;
+  BYTE *pfuncPrintMessage = pBase + 0x1080;
 
   const CHAR messageLength = 16; // "default message"
   CHAR localBuffer[messageLength];
