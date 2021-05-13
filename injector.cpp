@@ -79,15 +79,27 @@ INT main()
   BYTE *pBuffer = pBase + 0x2238;
   BYTE *pfuncPrintMessage = pBase + 0x1080;
 
-  const CHAR messageLength = 16; // "default message"
-  CHAR localBuffer[messageLength];
+  const BYTE MESSAGE_LENGTH = 16; // "default message"
+  CHAR localBuffer[MESSAGE_LENGTH];
   ReadProcessMemory(
     hProcess,
     (void *)pBuffer,
     &localBuffer,
-    sizeof(CHAR) * messageLength,
+    sizeof(CHAR) * MESSAGE_LENGTH,
     0);
   printf("Buffer: %s\n", localBuffer);
-  
-  return 0;
+
+  const CHAR SHELLCODE[] = "SHELLCODE";
+  const SIZE_T SHELLCODE_SIZE = sizeof(SHELLCODE);
+  LPVOID shellcode = VirtualAllocEx(
+    hProcess,
+    NULL,
+    SHELLCODE_SIZE,
+    MEM_COMMIT,
+    PAGE_EXECUTE_READWRITE);
+  printf("Allocated %d bytes at %p\n", SHELLCODE_SIZE, shellcode);
+  if (!WriteProcessMemory(hProcess, shellcode, SHELLCODE, SHELLCODE_SIZE, NULL))
+    printf("Cannot write shellcode!");
+
+  return NULL;
 }
