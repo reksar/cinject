@@ -89,7 +89,8 @@ INT main()
     0);
   printf("Buffer: %s\n", localBuffer);
 
-  const CHAR SHELLCODE[] = "SHELLCODE";
+  const DWORD64 base = (DWORD64)pBase;
+  LPCVOID SHELLCODE = &base; 
   const SIZE_T SHELLCODE_SIZE = sizeof(SHELLCODE);
   LPVOID shellcode = VirtualAllocEx(
     hProcess,
@@ -97,7 +98,7 @@ INT main()
     SHELLCODE_SIZE,
     MEM_COMMIT,
     PAGE_EXECUTE_READWRITE);
-  printf("Allocated %d bytes at %p\n", SHELLCODE_SIZE, shellcode);
+  printf("Allocated %llu bytes at %p\n", SHELLCODE_SIZE, shellcode);
   if (!WriteProcessMemory(hProcess, shellcode, SHELLCODE, SHELLCODE_SIZE, NULL))
     printf("Cannot write shellcode!");
 
