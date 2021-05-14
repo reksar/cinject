@@ -7,7 +7,7 @@
 #include <Windows.h>
 #include <tlhelp32.h>
 
-DWORD getPID(const CHAR *ProcessName)
+DWORD getPID(const CHAR* ProcessName)
 {
   PROCESSENTRY32W entry;
   entry.dwSize = sizeof(PROCESSENTRY32W);
@@ -16,7 +16,7 @@ DWORD getPID(const CHAR *ProcessName)
   {
     while (Process32Next(snapshot, (LPPROCESSENTRY32)&entry) == TRUE)
     {
-      if (strcmp((CHAR *)entry.szExeFile, ProcessName) == 0)
+      if (strcmp((CHAR*)entry.szExeFile, ProcessName) == 0)
       {
         CloseHandle(snapshot);
         return entry.th32ProcessID;
@@ -27,7 +27,7 @@ DWORD getPID(const CHAR *ProcessName)
   return NULL;
 }
 
-BYTE *GetModuleBase(const CHAR *lpModuleName, DWORD dwProcessId)
+BYTE* GetModuleBase(const CHAR* lpModuleName, DWORD dwProcessId)
 {
   MODULEENTRY32W lpModuleEntry = { 0 };
   HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, dwProcessId);
@@ -38,7 +38,7 @@ BYTE *GetModuleBase(const CHAR *lpModuleName, DWORD dwProcessId)
   BOOL bModule = Module32First(snapshot, (LPMODULEENTRY32)&lpModuleEntry);
   while (bModule)
   {
-    if (!strcmp((CHAR *)lpModuleEntry.szModule, lpModuleName))
+    if (!strcmp((CHAR*)lpModuleEntry.szModule, lpModuleName))
     {
       CloseHandle(snapshot);
       return lpModuleEntry.modBaseAddr;
@@ -74,7 +74,7 @@ LPVOID Inject(HANDLE hProcess)
 
 INT main()
 {
-  const CHAR *ProcessName = "test.exe";
+  const CHAR* ProcessName = "test.exe";
 
   const DWORD PID = getPID(ProcessName);
   if (!PID)
@@ -92,21 +92,21 @@ INT main()
   }
   printf("Handle: %d\n", hProcess);
 
-  BYTE *pProcess = GetModuleBase(ProcessName, PID);
+  BYTE* pProcess = GetModuleBase(ProcessName, PID);
   if (!pProcess)
   {
     printf("Can not get address of PID %d\n", PID);
     return 3;
   }
 
-  BYTE *pBuffer = pProcess + 0x2238;
-  BYTE *pfuncPrintMessage = pProcess + 0x1080;
+  BYTE* pBuffer = pProcess + 0x2238;
+  BYTE* pfuncPrintMessage = pProcess + 0x1080;
 
   const BYTE MESSAGE_LENGTH = 16; // "default message"
   CHAR localBuffer[MESSAGE_LENGTH];
   ReadProcessMemory(
     hProcess,
-    (void *)pBuffer,
+    (void*)pBuffer,
     &localBuffer,
     sizeof(CHAR) * MESSAGE_LENGTH,
     0);
