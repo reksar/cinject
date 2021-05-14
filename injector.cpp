@@ -66,7 +66,7 @@ ProcessEntry OpenProcess(const CHAR* Name)
 LPVOID Inject(ProcessEntry Process)
 {
   const CHAR Shellcode[] = "\x48\xB8\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\x48\x89\xC1\x48\xB8\xBB\xBB\xBB\xBB\xBB\xBB\xBB\xBB\x48\x89\xC2\x48\xB8\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xFF\xD0\xC3";
-  const DWORD64 FMT_OFFSET = 0x1;
+  const DWORD64 FMT_OFFSET = 0x2220;
 
   const auto BaseAddress = reinterpret_cast<DWORD64>(Process.Pointer);
   const DWORD64 FmtAddress = BaseAddress + FMT_OFFSET;
