@@ -68,24 +68,34 @@ ProcessEntry OpenProcess(const CHAR* Name)
 LPVOID Inject(ProcessEntry Process)
 {
   const CHAR Shellcode[] = "\x48\xB8\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\x48\x89\xC1\x48\xB8\xBB\xBB\xBB\xBB\xBB\xBB\xBB\xBB\x48\x89\xC2\x48\xB8\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xFF\xD0\xC3";
+  const DWORD64 FmtAddress = 0x7ff671e72220;
   const SIZE_T ShellcodeSize = sizeof(Shellcode);
+  const SIZE_T AddressSize = sizeof(DWORD64);
 
-  LPVOID pVictimMemory = VirtualAllocEx(
+  const LPVOID VictimMemory = VirtualAllocEx(
     Process.Handle,
     NULL,
     ShellcodeSize,
     MEM_COMMIT,
     PAGE_EXECUTE_READWRITE);
   
-  printf("Allocated %llu bytes at %p\n", ShellcodeSize, pVictimMemory);
+  printf("Allocated %llu bytes at %p\n", ShellcodeSize, VictimMemory);
+
+  const LPVOID pFmtAddress = (BYTE*)VictimMemory + 2;
   
   return WriteProcessMemory(
     Process.Handle,
-    pVictimMemory,
+    VictimMemory,
     Shellcode,
     ShellcodeSize,
     NULL)
-  ? pVictimMemory : NULL;
+  && WriteProcessMemory(
+    Process.Handle,
+    pFmtAddress,
+    &FmtAddress,
+    AddressSize,
+    NULL)
+  ? VictimMemory : NULL;
 }
 
 void PrintProcessInfo(ProcessEntry Process)
@@ -117,15 +127,15 @@ INT main()
   
   PrintDefaultMessage(Process);
 
-  LPVOID pVictimMemory = Inject(Process);
-  if (!pVictimMemory)
+  const auto VictimMemory = Inject(Process);
+  if (!VictimMemory)
     return 2;
-  
+
   /*TODO
   const BOOL IsMessageWritten = WriteMessage(hProcess, pVictimMemory);
   if (!IsMessageWritten)
-    return 5;
+    return 3;
   */
-
+  printf("Done!");
   return NULL;
 }
