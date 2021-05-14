@@ -35,44 +35,43 @@ DWORD GetPID(const CHAR* ProcessName)
   return NULL;
 }
 
-LPVOID GetBaseAddress(const CHAR* Name, const DWORD PID)
+LPVOID GetProcessPointer(const CHAR* Name, const DWORD PID)
 {
   const LPMODULEENTRY32 Module = new MODULEENTRY32{ sizeof(MODULEENTRY32) };
   const HANDLE Snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, PID);
 
-  LPVOID BaseAddress = NULL;
+  LPVOID ProcessPointer = NULL;
   BOOL IsNameFound = FALSE;
   BOOL HasModule = Module32First(Snapshot, Module);
   while (!IsNameFound && HasModule)
   {
     IsNameFound = !strcmp(Name, (CHAR*)Module->szModule);
     if (IsNameFound)
-      BaseAddress = Module->modBaseAddr;
+      ProcessPointer = Module->modBaseAddr;
     HasModule = Module32Next(Snapshot, Module);
   }
 
   CloseHandle(Snapshot);
-  return BaseAddress;
+  return ProcessPointer;
 }
 
 ProcessEntry OpenProcess(const CHAR* Name)
 {
   const auto PID = GetPID(Name);
   const auto Handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, PID);
-  const auto Address = GetBaseAddress(Name, PID);
+  const auto Address = GetProcessPointer(Name, PID);
   return ProcessEntry{ Name, PID, Handle, Address };
 }
 
 LPVOID Inject(ProcessEntry Process)
 {
-  const CHAR Shellcode[] = "\x48\xB8\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\x48\x89\xC1\x48\xB8\xBB\xBB\xBB\xBB\xBB\xBB\xBB\xBB\x48\x89\xC2\x48\xB8\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xFF\xD0\xC3";
-  const DWORD64 FMT_OFFSET = 0x2220;
-
-  const auto BaseAddress = reinterpret_cast<DWORD64>(Process.Pointer);
-  const DWORD64 FmtAddress = BaseAddress + FMT_OFFSET;
-  const auto zsShellcode = sizeof(Shellcode);
-  const auto szAddress = sizeof(DWORD64);
   const auto Handle = Process.Handle;
+
+  const CHAR SHELLCODE[] = "\x48\xB8\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\x48\x89\xC1\x48\xB8\xBB\xBB\xBB\xBB\xBB\xBB\xBB\xBB\x48\x89\xC2\x48\xB8\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xFF\xD0\xC3";
+  const auto zsShellcode = sizeof(SHELLCODE);
+
+  const DWORD64 FMT_OFFSET = 0x2220;
+  //const DWORD64 CALL_OFFSET = 0x0;
 
   const auto pShellcode = VirtualAllocEx(
     Handle,
@@ -83,10 +82,21 @@ LPVOID Inject(ProcessEntry Process)
   
   printf("Allocated %llu bytes at %p\n", zsShellcode, pShellcode);
 
+  const auto ProcessAddress = reinterpret_cast<DWORD64>(Process.Pointer);
+  const DWORD64 FmtAddress = ProcessAddress + FMT_OFFSET;
+
+  const auto ShellcodeAddress = reinterpret_cast<DWORD64>(pShellcode);
+  const DWORD64 MsgAddress = ShellcodeAddress + zsShellcode;
+
+  const auto szAddress = sizeof(DWORD64);
+
   const LPVOID pFmtAddress = (BYTE*)pShellcode + 2;
+  const LPVOID pMsgAddress = (BYTE*)pShellcode + 14;
   
-  return WriteProcessMemory(Handle, pShellcode, Shellcode, zsShellcode, NULL)
+  return WriteProcessMemory(Handle, pShellcode, SHELLCODE, zsShellcode, NULL)
     && WriteProcessMemory(Handle, pFmtAddress, &FmtAddress, szAddress, NULL)
+    && WriteProcessMemory(Handle, pMsgAddress, &MsgAddress, szAddress, NULL)
+    //&& WriteProcessMemory(Handle, pCallAddress, &CallAddress, szAddress, NULL)
       ? pShellcode : NULL;
 }
 
@@ -123,11 +133,12 @@ INT main()
   if (!pShellcode)
     return 2;
 
-  /*TODO
+  /*
   const BOOL IsMessageWritten = WriteMessage(hProcess, pVictimMemory);
   if (!IsMessageWritten)
     return 3;
   */
+
   printf("Done!");
   return NULL;
 }
