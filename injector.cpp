@@ -19,42 +19,40 @@ DWORD GetPID(const CHAR* ProcessName)
 {
   PROCESSENTRY32W entry;
   entry.dwSize = sizeof(PROCESSENTRY32W);
-  HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
-  if (Process32First(snapshot, (LPPROCESSENTRY32)&entry) == TRUE)
+  HANDLE Snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
+  if (Process32First(Snapshot, (LPPROCESSENTRY32)&entry) == TRUE)
   {
-    while (Process32Next(snapshot, (LPPROCESSENTRY32)&entry) == TRUE)
+    while (Process32Next(Snapshot, (LPPROCESSENTRY32)&entry) == TRUE)
     {
       if (strcmp((CHAR*)entry.szExeFile, ProcessName) == 0)
       {
-        CloseHandle(snapshot);
+        CloseHandle(Snapshot);
         return entry.th32ProcessID;
       }
     }
   }
-  CloseHandle(snapshot);
+  CloseHandle(Snapshot);
   return NULL;
 }
 
-BYTE* GetBaseAddress(const CHAR* lpModuleName, DWORD dwProcessId)
+BYTE* GetBaseAddress(const CHAR* Name, const DWORD PID)
 {
-  MODULEENTRY32W lpModuleEntry = { 0 };
-  HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, dwProcessId);
-  if (! snapshot)
-    return NULL;
-  
-  lpModuleEntry.dwSize = sizeof(lpModuleEntry);
-  BOOL bModule = Module32First(snapshot, (LPMODULEENTRY32)&lpModuleEntry);
-  while (bModule)
+  const LPMODULEENTRY32 Module = new MODULEENTRY32{ sizeof(MODULEENTRY32) };
+  const HANDLE Snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, PID);
+
+  BYTE* BaseAddress = NULL;
+  BOOL IsNameFound = FALSE;
+  BOOL HasModule = Module32First(Snapshot, Module);
+  while (!IsNameFound && HasModule)
   {
-    if (!strcmp((CHAR*)lpModuleEntry.szModule, lpModuleName))
-    {
-      CloseHandle(snapshot);
-      return lpModuleEntry.modBaseAddr;
-    }
-    bModule = Module32Next(snapshot, (LPMODULEENTRY32)&lpModuleEntry);
+    IsNameFound = !strcmp(Name, (CHAR*)Module->szModule);
+    if (IsNameFound)
+      BaseAddress = Module->modBaseAddr;
+    HasModule = Module32Next(Snapshot, Module);
   }
-  CloseHandle(snapshot);
-  return NULL;
+  
+  CloseHandle(Snapshot);
+  return BaseAddress;
 }
 
 ProcessEntry OpenProcess(const CHAR* Name)
@@ -62,7 +60,7 @@ ProcessEntry OpenProcess(const CHAR* Name)
   const auto PID = GetPID(Name);
   const auto Handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, PID);
   const auto Address = GetBaseAddress(Name, PID);
-  return ProcessEntry { Name, PID, Handle, Address };
+  return ProcessEntry{ Name, PID, Handle, Address };
 }
 
 LPVOID Inject(ProcessEntry Process)
