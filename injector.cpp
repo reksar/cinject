@@ -12,7 +12,7 @@ struct ProcessEntry
   const CHAR* Name;
   const DWORD PID;
   const HANDLE Handle;
-  BYTE* Address;
+  const LPVOID Address;
 };
 
 DWORD GetPID(const CHAR* ProcessName)
@@ -35,12 +35,12 @@ DWORD GetPID(const CHAR* ProcessName)
   return NULL;
 }
 
-BYTE* GetBaseAddress(const CHAR* Name, const DWORD PID)
+LPVOID GetBaseAddress(const CHAR* Name, const DWORD PID)
 {
   const LPMODULEENTRY32 Module = new MODULEENTRY32{ sizeof(MODULEENTRY32) };
   const HANDLE Snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, PID);
 
-  BYTE* BaseAddress = NULL;
+  LPVOID BaseAddress = NULL;
   BOOL IsNameFound = FALSE;
   BOOL HasModule = Module32First(Snapshot, Module);
   while (!IsNameFound && HasModule)
@@ -50,7 +50,7 @@ BYTE* GetBaseAddress(const CHAR* Name, const DWORD PID)
       BaseAddress = Module->modBaseAddr;
     HasModule = Module32Next(Snapshot, Module);
   }
-  
+
   CloseHandle(Snapshot);
   return BaseAddress;
 }
@@ -103,16 +103,16 @@ void PrintProcessInfo(ProcessEntry Process)
 
 void PrintDefaultMessage(ProcessEntry Process)
 {
-  BYTE* pBuffer = Process.Address + 0x2238;
+  LPVOID Message = (BYTE*)Process.Address + 0x2238;
   const BYTE MESSAGE_LENGTH = 16; // "default message"
   CHAR localBuffer[MESSAGE_LENGTH];
   ReadProcessMemory(
     Process.Handle,
-    (void*)pBuffer,
+    Message,
     &localBuffer,
     sizeof(CHAR) * MESSAGE_LENGTH,
     0);
-  printf("Buffer: %s\n", localBuffer);
+  printf("Message: %s\n", localBuffer);
 }
 
 INT main()
