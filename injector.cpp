@@ -12,7 +12,7 @@ struct ProcessEntry
   const CHAR* Name;
   const DWORD PID;
   const HANDLE Handle;
-  const LPVOID Address;
+  const LPVOID Pointer;
 };
 
 DWORD GetPID(const CHAR* ProcessName)
@@ -66,44 +66,38 @@ ProcessEntry OpenProcess(const CHAR* Name)
 LPVOID Inject(ProcessEntry Process)
 {
   const CHAR Shellcode[] = "\x48\xB8\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\x48\x89\xC1\x48\xB8\xBB\xBB\xBB\xBB\xBB\xBB\xBB\xBB\x48\x89\xC2\x48\xB8\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xFF\xD0\xC3";
-  const DWORD64 FmtAddress = 0x7ff671e72220;
-  const SIZE_T ShellcodeSize = sizeof(Shellcode);
-  const SIZE_T AddressSize = sizeof(DWORD64);
+  const DWORD64 FMT_OFFSET = 0x1;
 
-  const LPVOID VictimMemory = VirtualAllocEx(
-    Process.Handle,
+  const auto BaseAddress = reinterpret_cast<DWORD64>(Process.Pointer);
+  const DWORD64 FmtAddress = BaseAddress + FMT_OFFSET;
+  const auto zsShellcode = sizeof(Shellcode);
+  const auto szAddress = sizeof(DWORD64);
+  const auto Handle = Process.Handle;
+
+  const auto pShellcode = VirtualAllocEx(
+    Handle,
     NULL,
-    ShellcodeSize,
+    zsShellcode,
     MEM_COMMIT,
     PAGE_EXECUTE_READWRITE);
   
-  printf("Allocated %llu bytes at %p\n", ShellcodeSize, VictimMemory);
+  printf("Allocated %llu bytes at %p\n", zsShellcode, pShellcode);
 
-  const LPVOID pFmtAddress = (BYTE*)VictimMemory + 2;
+  const LPVOID pFmtAddress = (BYTE*)pShellcode + 2;
   
-  return WriteProcessMemory(
-    Process.Handle,
-    VictimMemory,
-    Shellcode,
-    ShellcodeSize,
-    NULL)
-  && WriteProcessMemory(
-    Process.Handle,
-    pFmtAddress,
-    &FmtAddress,
-    AddressSize,
-    NULL)
-  ? VictimMemory : NULL;
+  return WriteProcessMemory(Handle, pShellcode, Shellcode, zsShellcode, NULL)
+    && WriteProcessMemory(Handle, pFmtAddress, &FmtAddress, szAddress, NULL)
+      ? pShellcode : NULL;
 }
 
 void PrintProcessInfo(ProcessEntry Process)
 {
-  printf("%s at %p\n", Process.Name, Process.Address);
+  printf("%s at %p\n", Process.Name, Process.Pointer);
 }
 
 void PrintDefaultMessage(ProcessEntry Process)
 {
-  LPVOID Message = (BYTE*)Process.Address + 0x2238;
+  LPVOID Message = (BYTE*)Process.Pointer + 0x2238;
   const BYTE MESSAGE_LENGTH = 16; // "default message"
   CHAR localBuffer[MESSAGE_LENGTH];
   ReadProcessMemory(
@@ -120,13 +114,13 @@ INT main()
   const auto Process = OpenProcess("test.exe");
   PrintProcessInfo(Process);
 
-  if (!Process.PID || !Process.Handle || !Process.Address)
+  if (!Process.PID || !Process.Handle || !Process.Pointer)
     return 1;
   
   PrintDefaultMessage(Process);
 
-  const auto VictimMemory = Inject(Process);
-  if (!VictimMemory)
+  const auto pShellcode = Inject(Process);
+  if (!pShellcode)
     return 2;
 
   /*TODO
