@@ -7,7 +7,15 @@
 #include <Windows.h>
 #include <tlhelp32.h>
 
-DWORD getPID(const CHAR* ProcessName)
+struct ProcessEntry
+{
+  const CHAR* Name;
+  const DWORD PID;
+  const HANDLE Handle;
+  BYTE* Address;
+};
+
+DWORD GetPID(const CHAR* ProcessName)
 {
   PROCESSENTRY32W entry;
   entry.dwSize = sizeof(PROCESSENTRY32W);
@@ -27,7 +35,7 @@ DWORD getPID(const CHAR* ProcessName)
   return NULL;
 }
 
-BYTE* GetModuleBase(const CHAR* lpModuleName, DWORD dwProcessId)
+BYTE* GetBaseAddress(const CHAR* lpModuleName, DWORD dwProcessId)
 {
   MODULEENTRY32W lpModuleEntry = { 0 };
   HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, dwProcessId);
@@ -49,13 +57,21 @@ BYTE* GetModuleBase(const CHAR* lpModuleName, DWORD dwProcessId)
   return NULL;
 }
 
-LPVOID Inject(HANDLE hProcess)
+ProcessEntry OpenProcess(const CHAR* Name)
+{
+  const auto PID = GetPID(Name);
+  const auto Handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, PID);
+  const auto Address = GetBaseAddress(Name, PID);
+  return ProcessEntry { Name, PID, Handle, Address };
+}
+
+LPVOID Inject(ProcessEntry Process)
 {
   const CHAR Shellcode[] = "\x48\xB8\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\x48\x89\xC1\x48\xB8\xBB\xBB\xBB\xBB\xBB\xBB\xBB\xBB\x48\x89\xC2\x48\xB8\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xFF\xD0\xC3";
   const SIZE_T ShellcodeSize = sizeof(Shellcode);
 
   LPVOID pVictimMemory = VirtualAllocEx(
-    hProcess,
+    Process.Handle,
     NULL,
     ShellcodeSize,
     MEM_COMMIT,
@@ -64,7 +80,7 @@ LPVOID Inject(HANDLE hProcess)
   printf("Allocated %llu bytes at %p\n", ShellcodeSize, pVictimMemory);
   
   return WriteProcessMemory(
-    hProcess,
+    Process.Handle,
     pVictimMemory,
     Shellcode,
     ShellcodeSize,
@@ -72,49 +88,38 @@ LPVOID Inject(HANDLE hProcess)
   ? pVictimMemory : NULL;
 }
 
-INT main()
+void PrintProcessInfo(ProcessEntry Process)
 {
-  const CHAR* ProcessName = "test.exe";
+  printf("%s at %p\n", Process.Name, Process.Address);
+}
 
-  const DWORD PID = getPID(ProcessName);
-  if (!PID)
-  {
-    printf("Process not found: %s\n", ProcessName);
-    return 1;
-  }
-  printf("Process %s\nPID: %d\n", ProcessName, PID);
-
-  HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, PID);
-  if (!hProcess)
-  {
-    printf("Can't Handle the PID %d\n", PID);
-    return 2;
-  }
-  printf("Handle: %d\n", hProcess);
-
-  BYTE* pProcess = GetModuleBase(ProcessName, PID);
-  if (!pProcess)
-  {
-    printf("Can not get address of PID %d\n", PID);
-    return 3;
-  }
-
-  BYTE* pBuffer = pProcess + 0x2238;
-  BYTE* pfuncPrintMessage = pProcess + 0x1080;
-
+void PrintDefaultMessage(ProcessEntry Process)
+{
+  BYTE* pBuffer = Process.Address + 0x2238;
   const BYTE MESSAGE_LENGTH = 16; // "default message"
   CHAR localBuffer[MESSAGE_LENGTH];
   ReadProcessMemory(
-    hProcess,
+    Process.Handle,
     (void*)pBuffer,
     &localBuffer,
     sizeof(CHAR) * MESSAGE_LENGTH,
     0);
   printf("Buffer: %s\n", localBuffer);
+}
 
-  LPVOID pVictimMemory = Inject(hProcess);
+INT main()
+{
+  const auto Process = OpenProcess("test.exe");
+  PrintProcessInfo(Process);
+
+  if (!Process.PID || !Process.Handle || !Process.Address)
+    return 1;
+  
+  PrintDefaultMessage(Process);
+
+  LPVOID pVictimMemory = Inject(Process);
   if (!pVictimMemory)
-    return 4;
+    return 2;
   
   /*TODO
   const BOOL IsMessageWritten = WriteMessage(hProcess, pVictimMemory);
