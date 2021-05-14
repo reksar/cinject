@@ -70,34 +70,38 @@ LPVOID Inject(ProcessEntry Process)
   const CHAR SHELLCODE[] = "\x48\xB8\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\x48\x89\xC1\x48\xB8\xBB\xBB\xBB\xBB\xBB\xBB\xBB\xBB\x48\x89\xC2\x48\xB8\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xFF\xD0\xC3";
   const auto zsShellcode = sizeof(SHELLCODE);
 
+  const SIZE_T SZ_MAX_MESSAGE = 260;
   const DWORD64 FMT_OFFSET = 0x2220;
-  //const DWORD64 CALL_OFFSET = 0x0;
+  const DWORD64 CALL_OFFSET = 0x1080;
 
-  const auto pShellcode = VirtualAllocEx(
+  const auto szMemory = zsShellcode + SZ_MAX_MESSAGE;
+  const auto pMemory = VirtualAllocEx(
     Handle,
     NULL,
-    zsShellcode,
+    szMemory,
     MEM_COMMIT,
     PAGE_EXECUTE_READWRITE);
   
-  printf("Allocated %llu bytes at %p\n", zsShellcode, pShellcode);
+  printf("Allocated %llu bytes at %p\n", szMemory, pMemory);
 
   const auto ProcessAddress = reinterpret_cast<DWORD64>(Process.Pointer);
   const DWORD64 FmtAddress = ProcessAddress + FMT_OFFSET;
+  const DWORD64 CallAddress = ProcessAddress + CALL_OFFSET;
 
-  const auto ShellcodeAddress = reinterpret_cast<DWORD64>(pShellcode);
+  const auto ShellcodeAddress = reinterpret_cast<DWORD64>(pMemory);
   const DWORD64 MsgAddress = ShellcodeAddress + zsShellcode;
 
-  const auto szAddress = sizeof(DWORD64);
-
-  const LPVOID pFmtAddress = (BYTE*)pShellcode + 2;
-  const LPVOID pMsgAddress = (BYTE*)pShellcode + 14;
+  const LPVOID pFmtAddress = (BYTE*)pMemory + 2;
+  const LPVOID pMsgAddress = (BYTE*)pMemory + 14;
+  const LPVOID pCallAddress = (BYTE*)pMemory + 28;
   
-  return WriteProcessMemory(Handle, pShellcode, SHELLCODE, zsShellcode, NULL)
+  const auto szAddress = sizeof(DWORD64);
+  
+  return WriteProcessMemory(Handle, pMemory, SHELLCODE, zsShellcode, NULL)
     && WriteProcessMemory(Handle, pFmtAddress, &FmtAddress, szAddress, NULL)
     && WriteProcessMemory(Handle, pMsgAddress, &MsgAddress, szAddress, NULL)
-    //&& WriteProcessMemory(Handle, pCallAddress, &CallAddress, szAddress, NULL)
-      ? pShellcode : NULL;
+    && WriteProcessMemory(Handle, pCallAddress, &CallAddress, szAddress, NULL)
+      ? pMemory : NULL;
 }
 
 void PrintProcessInfo(ProcessEntry Process)
@@ -129,8 +133,8 @@ INT main()
   
   PrintDefaultMessage(Process);
 
-  const auto pShellcode = Inject(Process);
-  if (!pShellcode)
+  const auto pMemory = Inject(Process);
+  if (!pMemory)
     return 2;
 
   /*
