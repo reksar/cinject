@@ -138,6 +138,11 @@ INT main()
   const BOOL IsMessageWritten = WriteMessage("OWNED!", Process, pMemory);
   if (!IsMessageWritten)
     return 4;
+  
+  LPTHREAD_START_ROUTINE pStart = (LPTHREAD_START_ROUTINE)pMemory;
+  HANDLE Thread = CreateRemoteThread(
+    Process.Handle, NULL, NULL, pStart, NULL, NULL, NULL);
+  CloseHandle(Thread);
 
   printf("Done!");
   return NULL;
