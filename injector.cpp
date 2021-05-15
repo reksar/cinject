@@ -15,24 +15,25 @@ struct ProcessEntry
   const LPVOID Pointer;
 };
 
-DWORD GetPID(const CHAR* ProcessName)
+DWORD GetPID(const CHAR* Name)
 {
-  PROCESSENTRY32W entry;
-  entry.dwSize = sizeof(PROCESSENTRY32W);
+  const LPPROCESSENTRY32 Process = new PROCESSENTRY32{ sizeof(PROCESSENTRY32) };
   HANDLE Snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
-  if (Process32First(Snapshot, (LPPROCESSENTRY32)&entry) == TRUE)
+
+  DWORD PID = NULL;
+  BOOL IsNameFound = FALSE;
+  BOOL HasProcess = Process32First(Snapshot, Process);
+  while (!IsNameFound && HasProcess)
   {
-    while (Process32Next(Snapshot, (LPPROCESSENTRY32)&entry) == TRUE)
-    {
-      if (strcmp((CHAR*)entry.szExeFile, ProcessName) == 0)
-      {
-        CloseHandle(Snapshot);
-        return entry.th32ProcessID;
-      }
-    }
+    IsNameFound = !strcmp(Name, (CHAR*)Process->szExeFile);
+    if (IsNameFound)
+      PID = Process->th32ProcessID;
+    
+    HasProcess = Process32Next(Snapshot, Process);
   }
+
   CloseHandle(Snapshot);
-  return NULL;
+  return PID;
 }
 
 LPVOID GetProcessPointer(const CHAR* Name, const DWORD PID)
@@ -48,6 +49,7 @@ LPVOID GetProcessPointer(const CHAR* Name, const DWORD PID)
     IsNameFound = !strcmp(Name, (CHAR*)Module->szModule);
     if (IsNameFound)
       ProcessPointer = Module->modBaseAddr;
+    
     HasModule = Module32Next(Snapshot, Module);
   }
 
@@ -55,7 +57,7 @@ LPVOID GetProcessPointer(const CHAR* Name, const DWORD PID)
   return ProcessPointer;
 }
 
-ProcessEntry OpenProcess(const CHAR* Name)
+ProcessEntry HandleProcess(const CHAR* Name)
 {
   const auto PID = GetPID(Name);
   const auto Handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, PID);
@@ -129,7 +131,7 @@ void PrintDefaultMessage(ProcessEntry Process)
 
 INT main()
 {
-  const auto Process = OpenProcess("test.exe");
+  const auto Process = HandleProcess("test.exe");
   PrintProcessInfo(Process);
 
   if (!Process.PID || !Process.Handle || !Process.Pointer)
@@ -142,7 +144,7 @@ INT main()
     return 2;
 
   /*
-  const BOOL IsMessageWritten = WriteMessage(hProcess, pVictimMemory);
+  const BOOL IsMessageWritten = WriteMessage(hProcess, pMemory);
   if (!IsMessageWritten)
     return 3;
   */
