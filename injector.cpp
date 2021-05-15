@@ -68,12 +68,16 @@ LPVOID Inject(ProcessEntry Process)
   const auto Handle = Process.Handle;
 
   const CHAR SHELLCODE[] = "\x48\xB8\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\x48\x89\xC1\x48\xB8\xBB\xBB\xBB\xBB\xBB\xBB\xBB\xBB\x48\x89\xC2\x48\xB8\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xFF\xD0\xC3";
-  const auto zsShellcode = sizeof(SHELLCODE);
+  const DWORD64 FMT_ADDRESS_OFFSET = 2;
+  const DWORD64 MSG_ADDRESS_OFFSET = 15;
+  const DWORD64 CALL_ADDRESS_OFFSET = 28;
 
-  const SIZE_T SZ_MAX_MESSAGE = 260;
   const DWORD64 FMT_OFFSET = 0x2220;
   const DWORD64 CALL_OFFSET = 0x1080;
 
+  const SIZE_T SZ_MAX_MESSAGE = 260;
+
+  const auto zsShellcode = sizeof(SHELLCODE);
   const auto szMemory = zsShellcode + SZ_MAX_MESSAGE;
   const auto pMemory = VirtualAllocEx(
     Handle,
@@ -91,10 +95,10 @@ LPVOID Inject(ProcessEntry Process)
   const auto ShellcodeAddress = reinterpret_cast<DWORD64>(pMemory);
   const DWORD64 MsgAddress = ShellcodeAddress + zsShellcode;
 
-  const LPVOID pFmtAddress = (BYTE*)pMemory + 2;
-  const LPVOID pMsgAddress = (BYTE*)pMemory + 14;
-  const LPVOID pCallAddress = (BYTE*)pMemory + 28;
-  
+  const LPVOID pFmtAddress = (BYTE*)pMemory + FMT_ADDRESS_OFFSET;
+  const LPVOID pMsgAddress = (BYTE*)pMemory + MSG_ADDRESS_OFFSET;
+  const LPVOID pCallAddress = (BYTE*)pMemory + CALL_ADDRESS_OFFSET;
+
   const auto szAddress = sizeof(DWORD64);
   
   return WriteProcessMemory(Handle, pMemory, SHELLCODE, zsShellcode, NULL)
