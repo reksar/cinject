@@ -41,7 +41,7 @@ LPVOID GetProcessPointer(const CHAR* Name, const DWORD PID)
   const LPMODULEENTRY32 Module = new MODULEENTRY32{ sizeof(MODULEENTRY32) };
   const HANDLE Snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, PID);
 
-  LPVOID ProcessPointer = NULL;
+  LPVOID ProcessPointer = nullptr;
   BOOL IsNameFound = FALSE;
   BOOL HasModule = Module32First(Snapshot, Module);
   while (!IsNameFound && HasModule)
@@ -65,6 +65,17 @@ ProcessEntry HandleProcess(const CHAR* Name)
   return ProcessEntry{ Name, PID, Handle, Address };
 }
 
+BOOL CanReadDefaultMessage(ProcessEntry Process)
+{
+  const CHAR MESSAGE[] = "default message";
+  const DWORD64 MESSAGE_OFFSET = 0x2238;
+  const BYTE szMessage = sizeof(MESSAGE);
+  const LPVOID pMessage = (BYTE*)Process.Pointer + MESSAGE_OFFSET;
+  CHAR Buffer[szMessage];
+  ReadProcessMemory(Process.Handle, pMessage, &Buffer, szMessage, nullptr);
+  return !strcmp(MESSAGE, Buffer);
+}
+
 LPVOID Inject(ProcessEntry Process)
 {
   const auto Handle = Process.Handle;
@@ -83,7 +94,7 @@ LPVOID Inject(ProcessEntry Process)
   const auto szMemory = zsShellcode + SZ_MAX_MESSAGE;
   const auto pMemory = VirtualAllocEx(
     Handle,
-    NULL,
+    nullptr,
     szMemory,
     MEM_COMMIT,
     PAGE_EXECUTE_READWRITE);
@@ -107,46 +118,28 @@ LPVOID Inject(ProcessEntry Process)
     && WriteProcessMemory(Handle, pFmtAddress, &FmtAddress, szAddress, NULL)
     && WriteProcessMemory(Handle, pMsgAddress, &MsgAddress, szAddress, NULL)
     && WriteProcessMemory(Handle, pCallAddress, &CallAddress, szAddress, NULL)
-      ? pMemory : NULL;
-}
-
-void PrintProcessInfo(ProcessEntry Process)
-{
-  printf("%s at %p\n", Process.Name, Process.Pointer);
-}
-
-void PrintDefaultMessage(ProcessEntry Process)
-{
-  LPVOID Message = (BYTE*)Process.Pointer + 0x2238;
-  const BYTE MESSAGE_LENGTH = 16; // "default message"
-  CHAR localBuffer[MESSAGE_LENGTH];
-  ReadProcessMemory(
-    Process.Handle,
-    Message,
-    &localBuffer,
-    sizeof(CHAR) * MESSAGE_LENGTH,
-    0);
-  printf("Message: %s\n", localBuffer);
+      ? pMemory : nullptr;
 }
 
 INT main()
 {
   const auto Process = HandleProcess("test.exe");
-  PrintProcessInfo(Process);
-
-  if (!Process.PID || !Process.Handle || !Process.Pointer)
+  if (!(Process.PID && Process.Handle && Process.Pointer))
     return 1;
   
-  PrintDefaultMessage(Process);
+  printf("%s at %p\n", Process.Name, Process.Pointer);
+
+  if (!CanReadDefaultMessage(Process))
+    return 2;
 
   const auto pMemory = Inject(Process);
   if (!pMemory)
-    return 2;
+    return 3;
 
   /*
   const BOOL IsMessageWritten = WriteMessage(hProcess, pMemory);
   if (!IsMessageWritten)
-    return 3;
+    return 4;
   */
 
   printf("Done!");
