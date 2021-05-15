@@ -7,6 +7,14 @@
 #include <Windows.h>
 #include <tlhelp32.h>
 
+const CHAR SHELLCODE[] = "\x48\xB8\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\x48\x89\xC1\x48\xB8\xBB\xBB\xBB\xBB\xBB\xBB\xBB\xBB\x48\x89\xC2\x48\xB8\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xFF\xD0\xC3";
+const DWORD64 FMT_ADDRESS_OFFSET = 2;
+const DWORD64 MSG_ADDRESS_OFFSET = 15;
+const DWORD64 CALL_ADDRESS_OFFSET = 28;
+const SIZE_T SZ_MESSAGE_MAX = 260;
+const SIZE_T SZ_SHELLCODE = sizeof(SHELLCODE);
+const SIZE_T SZ_MEMORY = SZ_SHELLCODE + SZ_MESSAGE_MAX;
+
 struct ProcessEntry
 {
   const CHAR* Name;
@@ -78,35 +86,20 @@ BOOL CanReadDefaultMessage(ProcessEntry Process)
 
 LPVOID Inject(ProcessEntry Process)
 {
-  const auto Handle = Process.Handle;
-
-  const CHAR SHELLCODE[] = "\x48\xB8\xAA\xAA\xAA\xAA\xAA\xAA\xAA\xAA\x48\x89\xC1\x48\xB8\xBB\xBB\xBB\xBB\xBB\xBB\xBB\xBB\x48\x89\xC2\x48\xB8\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xFF\xD0\xC3";
-  const DWORD64 FMT_ADDRESS_OFFSET = 2;
-  const DWORD64 MSG_ADDRESS_OFFSET = 15;
-  const DWORD64 CALL_ADDRESS_OFFSET = 28;
-
   const DWORD64 FMT_OFFSET = 0x2220;
   const DWORD64 CALL_OFFSET = 0x1080;
 
-  const SIZE_T SZ_MAX_MESSAGE = 260;
+  const auto Handle = Process.Handle;
 
-  const auto zsShellcode = sizeof(SHELLCODE);
-  const auto szMemory = zsShellcode + SZ_MAX_MESSAGE;
   const auto pMemory = VirtualAllocEx(
-    Handle,
-    nullptr,
-    szMemory,
-    MEM_COMMIT,
-    PAGE_EXECUTE_READWRITE);
-  
-  printf("Allocated %llu bytes at %p\n", szMemory, pMemory);
+    Handle, nullptr, SZ_MEMORY, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 
   const auto ProcessAddress = reinterpret_cast<DWORD64>(Process.Pointer);
   const DWORD64 FmtAddress = ProcessAddress + FMT_OFFSET;
   const DWORD64 CallAddress = ProcessAddress + CALL_OFFSET;
 
   const auto ShellcodeAddress = reinterpret_cast<DWORD64>(pMemory);
-  const DWORD64 MsgAddress = ShellcodeAddress + zsShellcode;
+  const DWORD64 MsgAddress = ShellcodeAddress + SZ_SHELLCODE;
 
   const LPVOID pFmtAddress = (BYTE*)pMemory + FMT_ADDRESS_OFFSET;
   const LPVOID pMsgAddress = (BYTE*)pMemory + MSG_ADDRESS_OFFSET;
@@ -114,11 +107,21 @@ LPVOID Inject(ProcessEntry Process)
 
   const auto szAddress = sizeof(DWORD64);
   
-  return WriteProcessMemory(Handle, pMemory, SHELLCODE, zsShellcode, NULL)
+  return WriteProcessMemory(Handle, pMemory, SHELLCODE, SZ_SHELLCODE, NULL)
     && WriteProcessMemory(Handle, pFmtAddress, &FmtAddress, szAddress, NULL)
     && WriteProcessMemory(Handle, pMsgAddress, &MsgAddress, szAddress, NULL)
     && WriteProcessMemory(Handle, pCallAddress, &CallAddress, szAddress, NULL)
       ? pMemory : nullptr;
+}
+
+BOOL WriteMessage(
+  const CHAR Message[SZ_MESSAGE_MAX],
+  ProcessEntry Process,
+  LPVOID pMemory)
+{
+  const LPVOID pMessage = (BYTE*)pMemory + SZ_SHELLCODE;
+  return WriteProcessMemory(
+    Process.Handle, pMessage, Message, sizeof(Message), NULL);
 }
 
 INT main()
@@ -135,12 +138,12 @@ INT main()
   const auto pMemory = Inject(Process);
   if (!pMemory)
     return 3;
+  
+  printf("Allocated %llu bytes at %p\n", SZ_MEMORY, pMemory);
 
-  /*
-  const BOOL IsMessageWritten = WriteMessage(hProcess, pMemory);
+  const BOOL IsMessageWritten = WriteMessage("OWNED!", Process, pMemory);
   if (!IsMessageWritten)
     return 4;
-  */
 
   printf("Done!");
   return NULL;
