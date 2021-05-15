@@ -1,3 +1,6 @@
+#ifndef CINJECT_SHELLCODE_H_
+#define CINJECT_SHELLCODE_H_
+
 #include <minwindef.h>
 
 /*
@@ -20,3 +23,5 @@ const DWORD64 CALL_ADDRESS_OFFSET = 28;
 const SIZE_T SZ_MESSAGE_MAX = 260;
 const SIZE_T SZ_SHELLCODE = sizeof(SHELLCODE);
 const SIZE_T SZ_MEMORY = SZ_SHELLCODE + SZ_MESSAGE_MAX;
+
+#endif  // CINJECT_SHELLCODE_H_
