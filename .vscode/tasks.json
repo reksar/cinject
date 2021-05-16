@@ -3,17 +3,20 @@
 "version": "2.0.0",
 "tasks": [
   {
-    "label": "Compile MSVC x64",
+    "label": "Build with MSVC x64",
     "group": {
       "kind": "build",
       "isDefault": true
     },
+    "dependsOrder": "sequence",
     "dependsOn": [
-      "Compile injector"
+      "Assembly shellcode",
+      "Write shellcode.obj.h",
+      "Build injector"
     ]
   },
   {
-    "label": "Compile test",
+    "label": "Build test",
     "type": "shell",
     "command": "cl",
     "args": [
@@ -37,18 +40,44 @@
         ]
       }
     },
+    "problemMatcher": []
+  },
+  {
+    "label": "Assembly shellcode",
+    "type": "shell",
+    "command": "C:\\path\\to\\nasm.exe",
+    "args": [
+      "-f win64",
+      "-o build/shellcode.obj",
+      "shellcode.asm"
+    ],
     "presentation": {
-      "echo": false,
-      "reveal": "silent",
-      "focus": false,
-      "panel": "shared",
-      "showReuseMessage": true,
-      "clear": true
+      "showReuseMessage": false,
+      "group": "build"
     },
     "problemMatcher": []
   },
   {
-    "label": "Compile injector",
+    "label": "Write shellcode.obj.h",
+    "type": "shell",
+    "command": "C:\\path\\to\\git\\usr\\bin\\xxd.exe",
+    "args": [
+      "-i",
+      "shellcode.obj",
+      ">",
+      "..\\shellcode.obj.h"
+    ],
+    "options": {
+      "cwd": "build"
+    },
+    "presentation": {
+      "showReuseMessage": false,
+      "group": "build"
+    },
+    "problemMatcher": []
+  },
+  {
+    "label": "Build injector",
     "type": "shell",
     "command": "cl",
     "args": [
@@ -74,12 +103,7 @@
       }
     },
     "presentation": {
-      "echo": true,
-      "reveal": "always",
-      "focus": true,
-      "panel": "shared",
-      "showReuseMessage": true,
-      "clear": true
+      "group": "build"
     }
   }
 ]
