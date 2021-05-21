@@ -7,7 +7,12 @@
 #include <Windows.h>
 #include <tlhelp32.h>
 
+// You can generate it with "Extract shellcode" from `.vscode\tasks.json`, but
+// it will be automatically rewritted during default build task.
 #include "shellcode.h"
+
+const SIZE_T SZ_MESSAGE_MAX = 260;
+const SIZE_T SZ_MEMORY = SZ_MESSAGE_MAX + SZ_SHELLCODE;
 
 struct ProcessEntry
 {
