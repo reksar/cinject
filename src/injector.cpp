@@ -7,7 +7,12 @@
 #include <Windows.h>
 #include <tlhelp32.h>
 
+// You can generate it with "Extract shellcode" from `.vscode\tasks.json`, but
+// it will be automatically rewritted during default build task.
 #include "shellcode.h"
+
+const SIZE_T SZ_MESSAGE_MAX = 260;
+const SIZE_T SZ_MEMORY = SZ_MESSAGE_MAX + SZ_SHELLCODE;
 
 struct ProcessEntry
 {
@@ -25,9 +30,9 @@ DWORD GetPID(const CHAR* Name)
   DWORD PID = NULL;
   BOOL IsNameFound = FALSE;
   BOOL HasProcess = Process32First(Snapshot, Process);
-  while (!IsNameFound && HasProcess)
+  while (! IsNameFound && HasProcess)
   {
-    IsNameFound = !strcmp(Name, (CHAR*)Process->szExeFile);
+    IsNameFound = ! strcmp(Name, (CHAR*)Process->szExeFile);
     if (IsNameFound)
       PID = Process->th32ProcessID;
     
@@ -46,9 +51,9 @@ LPVOID GetProcessPointer(const CHAR* Name, const DWORD PID)
   LPVOID ProcessPointer = nullptr;
   BOOL IsNameFound = FALSE;
   BOOL HasModule = Module32First(Snapshot, Module);
-  while (!IsNameFound && HasModule)
+  while (! IsNameFound && HasModule)
   {
-    IsNameFound = !strcmp(Name, (CHAR*)Module->szModule);
+    IsNameFound = ! strcmp(Name, (CHAR*)Module->szModule);
     if (IsNameFound)
       ProcessPointer = Module->modBaseAddr;
     
@@ -75,75 +80,93 @@ BOOL CanReadDefaultMessage(ProcessEntry Process)
   const LPVOID pMessage = (BYTE*)Process.Pointer + MESSAGE_OFFSET;
   CHAR Buffer[szMessage];
   ReadProcessMemory(Process.Handle, pMessage, &Buffer, szMessage, nullptr);
-  return !strcmp(MESSAGE, Buffer);
+  return ! strcmp(MESSAGE, Buffer);
 }
 
-LPVOID Inject(ProcessEntry Process)
+BOOL WriteShellcode(const ProcessEntry Process, const LPVOID pMemory)
+{
+  return WriteProcessMemory(
+    Process.Handle, pMemory, SHELLCODE, SZ_SHELLCODE, NULL);
+}
+
+BOOL RewriteAddresses(const ProcessEntry Process, const LPVOID pMemory)
 {
   const DWORD64 FMT_OFFSET = 0x2220;
   const DWORD64 CALL_OFFSET = 0x1080;
-
-  const auto Handle = Process.Handle;
-
-  const auto pMemory = VirtualAllocEx(
-    Handle, nullptr, SZ_MEMORY, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
-
-  const auto ProcessAddress = reinterpret_cast<DWORD64>(Process.Pointer);
-  const DWORD64 FmtAddress = ProcessAddress + FMT_OFFSET;
-  const DWORD64 CallAddress = ProcessAddress + CALL_OFFSET;
-
-  const auto ShellcodeAddress = reinterpret_cast<DWORD64>(pMemory);
-  const DWORD64 MsgAddress = ShellcodeAddress + SZ_SHELLCODE;
 
   const LPVOID pFmtAddress = (BYTE*)pMemory + FMT_ADDRESS_OFFSET;
   const LPVOID pMsgAddress = (BYTE*)pMemory + MSG_ADDRESS_OFFSET;
   const LPVOID pCallAddress = (BYTE*)pMemory + CALL_ADDRESS_OFFSET;
 
+  const auto ProcessAddress = reinterpret_cast<DWORD64>(Process.Pointer);
+  const auto FmtAddress = ProcessAddress + FMT_OFFSET;
+  const auto CallAddress = ProcessAddress + CALL_OFFSET;
+
+  const auto ShellcodeAddress = reinterpret_cast<DWORD64>(pMemory);
+  const auto MsgAddress = ShellcodeAddress + SZ_SHELLCODE;
+
   const auto szAddress = sizeof(DWORD64);
-  
-  return WriteProcessMemory(Handle, pMemory, SHELLCODE, SZ_SHELLCODE, NULL)
-    && WriteProcessMemory(Handle, pFmtAddress, &FmtAddress, szAddress, NULL)
+  const auto Handle = Process.Handle;
+
+  return WriteProcessMemory(Handle, pFmtAddress, &FmtAddress, szAddress, NULL)
     && WriteProcessMemory(Handle, pMsgAddress, &MsgAddress, szAddress, NULL)
-    && WriteProcessMemory(Handle, pCallAddress, &CallAddress, szAddress, NULL)
+    && WriteProcessMemory(Handle, pCallAddress, &CallAddress, szAddress, NULL);
+}
+
+LPVOID Inject(const ProcessEntry Process)
+{
+  const auto pMemory = VirtualAllocEx(
+    Process.Handle, nullptr, SZ_MEMORY, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+
+  return WriteShellcode(Process, pMemory)
+    && RewriteAddresses(Process, pMemory)
       ? pMemory : nullptr;
 }
 
 BOOL WriteMessage(
   const CHAR Message[SZ_MESSAGE_MAX],
-  ProcessEntry Process,
-  LPVOID pMemory)
+  const ProcessEntry Process,
+  const LPVOID pMemory)
 {
   const LPVOID pMessage = (BYTE*)pMemory + SZ_SHELLCODE;
-  return WriteProcessMemory(
-    Process.Handle, pMessage, Message, sizeof(Message), NULL);
+  const auto szMessage = strlen(Message);
+  return szMessage
+    ? WriteProcessMemory(Process.Handle, pMessage, Message, szMessage, NULL)
+    : false;
+}
+
+void RunShellcode(const ProcessEntry Process, const LPVOID pMemory)
+{
+  const auto pStart = (LPTHREAD_START_ROUTINE)pMemory;
+  const auto hThread = CreateRemoteThread(
+    Process.Handle, NULL, NULL, pStart, NULL, NULL, NULL);
+  CloseHandle(hThread);
 }
 
 INT main()
 {
   const auto Process = HandleProcess("test.exe");
-  if (!(Process.PID && Process.Handle && Process.Pointer))
+  if (! (Process.PID && Process.Handle && Process.Pointer))
     return 1;
   
   printf("%s at %p\n", Process.Name, Process.Pointer);
 
-  if (!CanReadDefaultMessage(Process))
+  if (! CanReadDefaultMessage(Process))
     return 2;
 
   const auto pMemory = Inject(Process);
-  if (!pMemory)
+  if (! pMemory)
     return 3;
   
   printf("Allocated %llu bytes at %p\n", SZ_MEMORY, pMemory);
 
-  const BOOL IsMessageWritten = WriteMessage("OWNED!", Process, pMemory);
-  if (!IsMessageWritten)
-    return 4;
-  
-  LPTHREAD_START_ROUTINE pStart = (LPTHREAD_START_ROUTINE)pMemory;
-  HANDLE Thread = CreateRemoteThread(
-    Process.Handle, NULL, NULL, pStart, NULL, NULL, NULL);
-  CloseHandle(Thread);
+  CHAR Message[SZ_MESSAGE_MAX];
+  while (fgets(Message, SZ_MESSAGE_MAX, stdin) && strlen(Message) > 1)
+  {
+    WriteMessage(Message, Process, pMemory);
+    RunShellcode(Process, pMemory);
+    rewind(stdin);
+  }
 
-  printf("Done!");
   return NULL;
 }

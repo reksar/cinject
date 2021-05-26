@@ -3,52 +3,44 @@
 "version": "2.0.0",
 "tasks": [
   {
-    "label": "Compile MSVC x64",
+    "label": "Build with MSVC x64",
     "group": {
       "kind": "build",
       "isDefault": true
     },
+    "dependsOrder": "sequence",
     "dependsOn": [
-      "Compile injector"
-    ]
-  },
-  {
-    "label": "Compile test",
-    "type": "shell",
-    "command": "cl",
-    "args": [
-      "/MD",
-      "/W4",
-      "/EHsc",
-      "/std:c++17",
-      "/O2",
-      "/Fobuild\\",
-      "/Febuild\\",
-      "test.cpp"
+      "Assembly shellcode",
+      "Extract shellcode",
+      "Build injector"
     ],
-    "options": {
-      "shell": {
-        "executable": "C:\\Windows\\SysWOW64\\cmd.exe",
-        "args": [
-          "/D",
-          "/C",
-          "CALL \"C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Auxiliary\\Build\\vcvars64.bat\"",
-          "&&"
-        ]
-      }
-    },
+    "problemMatcher": []
+  },
+
+  {
+    "label": "Assembly shellcode",
+    "type": "shell",
+    "command": "utils\\shellcode-assembly.bat",
     "presentation": {
-      "echo": false,
-      "reveal": "silent",
-      "focus": false,
-      "panel": "shared",
-      "showReuseMessage": true,
-      "clear": true
+      "showReuseMessage": false,
+      "group": "build"
     },
     "problemMatcher": []
   },
+
   {
-    "label": "Compile injector",
+    "label": "Extract shellcode",
+    "type": "shell",
+    "command": "utils\\shellcode-extract.bat",
+    "presentation": {
+      "showReuseMessage": false,
+      "group": "build"
+    },
+    "problemMatcher": []
+  },
+
+  {
+    "label": "Build injector",
     "type": "shell",
     "command": "cl",
     "args": [
@@ -60,7 +52,7 @@
       "/Od",
       "/Fobuild\\",
       "/Febuild\\",
-      "injector.cpp"
+      "src\\injector.cpp"
     ],
     "options": {
       "shell": {
@@ -74,13 +66,36 @@
       }
     },
     "presentation": {
-      "echo": true,
-      "reveal": "always",
-      "focus": true,
-      "panel": "shared",
-      "showReuseMessage": true,
-      "clear": true
+      "group": "build"
     }
+  },
+
+  {
+    "label": "Build test",
+    "type": "shell",
+    "command": "cl",
+    "args": [
+      "/MD",
+      "/W4",
+      "/EHsc",
+      "/std:c++17",
+      "/O2",
+      "/Fobuild\\",
+      "/Febuild\\",
+      "src\\test.cpp"
+    ],
+    "options": {
+      "shell": {
+        "executable": "C:\\Windows\\SysWOW64\\cmd.exe",
+        "args": [
+          "/D",
+          "/C",
+          "CALL \"C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Auxiliary\\Build\\vcvars64.bat\"",
+          "&&"
+        ]
+      }
+    },
+    "problemMatcher": []
   }
 ]
 

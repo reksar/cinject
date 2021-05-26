@@ -1,0 +1,4 @@
+@ECHO OFF
+SET BIN_PATH=DISK:\path\to\git\usr\bin
+SET NASM_PATH=DISK:\path\to\nasm
+SET PATH=%PATH%;%BIN_PATH%;%NASM_PATH%
