@@ -11,6 +11,7 @@
 // it will be automatically rewritted during default build task.
 #include "shellcode.h"
 
+const SIZE_T SZ_EMPTY_LINE = 1; // LF (0x0A)
 const SIZE_T SZ_MESSAGE_MAX = 260;
 const SIZE_T SZ_MEMORY = SZ_MESSAGE_MAX + SZ_SHELLCODE;
 
@@ -129,7 +130,7 @@ BOOL WriteMessage(
   const LPVOID pMemory)
 {
   const auto szMessage = strlen(Message);
-  if ((szMessage <= 1) || (SZ_MESSAGE_MAX <= szMessage))
+  if ((szMessage <= SZ_EMPTY_LINE) || (SZ_MESSAGE_MAX <= szMessage))
     return false;
 
   const CHAR Terminator = NULL;
@@ -166,10 +167,9 @@ INT main()
   
   printf("Allocated %llu bytes at %p\n", SZ_MEMORY, pMemory);
 
-  const SIZE_T SZ_EMPTY = 1; // "\n"
   CHAR Message[SZ_MESSAGE_MAX];
   while (fgets(Message, SZ_MESSAGE_MAX, stdin)
-      && (strlen(Message) > SZ_EMPTY)
+      && (strlen(Message) > SZ_EMPTY_LINE)
       && WriteMessage(Message, Process, pMemory))
     RunShellcode(Process, pMemory);
 
