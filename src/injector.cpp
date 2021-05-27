@@ -124,15 +124,21 @@ LPVOID Inject(const ProcessEntry Process)
 }
 
 BOOL WriteMessage(
-  const CHAR Message[SZ_MESSAGE_MAX],
+  const CHAR* Message,
   const ProcessEntry Process,
   const LPVOID pMemory)
 {
-  const LPVOID pMessage = (BYTE*)pMemory + SZ_SHELLCODE;
   const auto szMessage = strlen(Message);
-  return szMessage
-    ? WriteProcessMemory(Process.Handle, pMessage, Message, szMessage, NULL)
-    : false;
+  if ((szMessage <= 1) || (SZ_MESSAGE_MAX <= szMessage))
+    return false;
+
+  const CHAR Terminator = NULL;
+  const auto szTerminator = sizeof(Terminator);
+  const auto Handle = Process.Handle;
+  const LPVOID pMessage = (BYTE*)pMemory + SZ_SHELLCODE;
+  const LPVOID pTerminator = (BYTE*)pMessage + szMessage;
+  return WriteProcessMemory(Handle, pMessage, Message, szMessage, NULL)
+    && WriteProcessMemory(Handle, pTerminator, &Terminator, szTerminator, NULL);
 }
 
 void RunShellcode(const ProcessEntry Process, const LPVOID pMemory)
@@ -160,13 +166,12 @@ INT main()
   
   printf("Allocated %llu bytes at %p\n", SZ_MEMORY, pMemory);
 
+  const SIZE_T SZ_EMPTY = 1; // "\n"
   CHAR Message[SZ_MESSAGE_MAX];
-  while (fgets(Message, SZ_MESSAGE_MAX, stdin) && strlen(Message) > 1)
-  {
-    WriteMessage(Message, Process, pMemory);
+  while (fgets(Message, SZ_MESSAGE_MAX, stdin)
+      && (strlen(Message) > SZ_EMPTY)
+      && WriteMessage(Message, Process, pMemory))
     RunShellcode(Process, pMemory);
-    rewind(stdin);
-  }
 
   return NULL;
 }
