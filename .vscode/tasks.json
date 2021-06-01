@@ -10,9 +10,10 @@
     },
     "dependsOrder": "sequence",
     "dependsOn": [
+      "Compile test",
       "Assembly shellcode",
       "Extract shellcode",
-      "Build injector"
+      "Compile injector"
     ],
     "problemMatcher": []
   },
@@ -40,60 +41,28 @@
   },
 
   {
-    "label": "Build injector",
+    "label": "Compile injector",
     "type": "shell",
-    "command": "cl",
+    "command": "utils\\compile.bat",
     "args": [
-      "/Z7",
-      "/MDd",
-      "/W4",
-      "/EHsc",
-      "/std:c++17",
-      "/Od",
-      "/Fobuild\\",
-      "/Febuild\\",
       "src\\injector.cpp"
     ],
-    "options": {
-      "shell": {
-        "executable": "C:\\Windows\\SysWOW64\\cmd.exe",
-        "args": [
-          "/D",
-          "/C",
-          "CALL \"C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Auxiliary\\Build\\vcvars64.bat\"",
-          "&&"
-        ]
-      }
-    },
     "presentation": {
       "group": "build"
-    }
+    },
+    "problemMatcher": []
   },
 
   {
-    "label": "Build test",
+    "label": "Compile test",
     "type": "shell",
-    "command": "cl",
+    "command": "utils\\compile.bat",
     "args": [
-      "/MD",
-      "/W4",
-      "/EHsc",
-      "/std:c++17",
-      "/O2",
-      "/Fobuild\\",
-      "/Febuild\\",
       "src\\test.cpp"
     ],
-    "options": {
-      "shell": {
-        "executable": "C:\\Windows\\SysWOW64\\cmd.exe",
-        "args": [
-          "/D",
-          "/C",
-          "CALL \"C:\\Program Files (x86)\\Microsoft Visual Studio\\2019\\BuildTools\\VC\\Auxiliary\\Build\\vcvars64.bat\"",
-          "&&"
-        ]
-      }
+    "presentation": {
+      "showReuseMessage": false,
+      "group": "build"
     },
     "problemMatcher": []
   }
