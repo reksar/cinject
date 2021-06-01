@@ -92,6 +92,7 @@ BOOL WriteShellcode(const ProcessEntry Process, const LPVOID pMemory)
 
 BOOL RewriteAddresses(const ProcessEntry Process, const LPVOID pMemory)
 {
+  // I run test.exe in x64dbg and find these offsets.
   const DWORD64 FMT_OFFSET = 0x2220;
   const DWORD64 CALL_OFFSET = 0x1080;
 
