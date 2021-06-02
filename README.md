@@ -7,7 +7,7 @@ https://xakep.ru/2015/08/12/code-injection
 
 Preferably use [Visual Studio Code](https://code.visualstudio.com) as IDE. 
 
-But you can to build project manually using `utils` and reading the 
+But you can build the project manually using `utils` and reading the 
 `.vscode\tasks.json` file.
 
 ## Requirements
@@ -25,8 +25,8 @@ If your VS tools version is different from given you must additionally set the
 `VCVARS_LNK` in `utils\config.bat` file.
 
 If your VS installation path is not default, you may change the `compilerPath` 
-in `c_cpp_properties.json` file to enable **IntelliSense** in **VS Code**.
+in `c_cpp_properties.json` file to improve **IntelliSense** in **VS Code**.
 
 # Build
 
-In **VS Code** run build task by pressing `Ctrl+Shift+B`
+In **VS Code** run build task (`Ctrl+Shift+B`).

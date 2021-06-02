@@ -13,6 +13,10 @@ SET VCVARS_LNK=%ProgramData%\Microsoft\Windows\Start Menu\Programs
 SET VCVARS_LNK=%VCVARS_LNK%\Visual Studio 2019\Visual Studio Tools\VC
 SET VCVARS_LNK=%VCVARS_LNK%\x64 Native Tools Command Prompt for VS 2019.lnk
 
+SET OUTDIR=build
+SET SHELLCODE_BIN=%OUTDIR%/shellcode.obj
+SET SHELLCODE_HEADER=src/shellcode.h
+
 REM --- Init ------------------------------------------------------------------
 
 SET PATH=%PATH%;%BIN_PATH%;%NASM_PATH%

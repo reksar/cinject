@@ -1,6 +1,5 @@
 @CALL utils\vcvars.bat || EXIT
 
-SET OUTDIR=build
 IF NOT EXIST "%OUTDIR%" (
   MKDIR "%OUTDIR%" 2>NUL
 )

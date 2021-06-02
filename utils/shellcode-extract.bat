@@ -3,14 +3,12 @@
 REM Cuts out a pure shellcode without NASM's shit from a BIN file and writes it
 REM into SHELLCODE_HEADER in `xxd -i` format.
 
-SET BIN=build/shellcode.obj
-SET HEXLINE=build/hexline.txt
-SET SHELLCODE_HEADER=src/shellcode.h
+SET HEXLINE=%OUTDIR%/hexline.txt
 SET BYTECHARS=2
 SET DUMPWIDTH=13
 
 REM Write HEXLINE.
-SET HEX_DUMP=xxd -ps %BIN%
+SET HEX_DUMP=xxd -ps %SHELLCODE_BIN%
 SET SINGLE_LINE=tr -d \n
 SET PURE_SHELLCODE=sed -r 's/.*abcdef(.*)fedcba.*/\1/'
 %HEX_DUMP% | %SINGLE_LINE% | %PURE_SHELLCODE% > %HEXLINE%
