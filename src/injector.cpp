@@ -7,8 +7,8 @@
 #include <Windows.h>
 #include <tlhelp32.h>
 
-// You can generate it with "Extract shellcode" from `.vscode\tasks.json`, but
-// it will be automatically rewritted during default build task.
+// Can be generated manually with "Generate shellcode" VS Code task.
+// Will be automatically overwritten on build task.
 #include "shellcode.h"
 
 const SIZE_T SZ_EMPTY_LINE = 1; // LF (0x0A)

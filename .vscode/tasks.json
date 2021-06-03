@@ -11,8 +11,7 @@
     "dependsOrder": "sequence",
     "dependsOn": [
       "Compile test",
-      "Assembly shellcode",
-      "Extract shellcode",
+      "Generate shellcode",
       "Compile injector"
     ],
     "problemMatcher": []
@@ -30,9 +29,12 @@
   },
 
   {
-    "label": "Extract shellcode",
+    "label": "Generate shellcode",
     "type": "shell",
-    "command": "utils\\shellcode-extract.bat",
+    "command": "utils\\shellcode-generate.bat",
+    "dependsOn": [
+      "Assembly shellcode"
+    ],
     "presentation": {
       "showReuseMessage": false,
       "group": "build"
