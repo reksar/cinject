@@ -25,18 +25,21 @@ struct ProcessEntry
 
 DWORD GetPID(const CHAR* Name)
 {
+  const HANDLE Snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
   const LPPROCESSENTRY32 Process = new PROCESSENTRY32{ sizeof(PROCESSENTRY32) };
-  HANDLE Snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
+
+  const auto IsNameFound = [Name, Process] {
+    const auto ProcessName = (CHAR*)Process->szExeFile;
+    return ! strcmp(Name, ProcessName);
+  };
 
   DWORD PID = NULL;
-  BOOL IsNameFound = FALSE;
   BOOL HasProcess = Process32First(Snapshot, Process);
-  while (! IsNameFound && HasProcess)
+  while (! PID && HasProcess)
   {
-    IsNameFound = ! strcmp(Name, (CHAR*)Process->szExeFile);
-    if (IsNameFound)
+    if (IsNameFound())
       PID = Process->th32ProcessID;
-    
+
     HasProcess = Process32Next(Snapshot, Process);
   }
 
@@ -46,18 +49,21 @@ DWORD GetPID(const CHAR* Name)
 
 LPVOID GetProcessPointer(const CHAR* Name, const DWORD PID)
 {
-  const LPMODULEENTRY32 Module = new MODULEENTRY32{ sizeof(MODULEENTRY32) };
   const HANDLE Snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, PID);
+  const LPMODULEENTRY32 Module = new MODULEENTRY32{ sizeof(MODULEENTRY32) };
+
+  const auto IsNameFound = [Name, Module] {
+    const auto ModuleName = (CHAR*)Module->szModule;
+    return ! strcmp(Name, ModuleName);
+  };
 
   LPVOID ProcessPointer = nullptr;
-  BOOL IsNameFound = FALSE;
   BOOL HasModule = Module32First(Snapshot, Module);
-  while (! IsNameFound && HasModule)
+  while (! ProcessPointer && HasModule)
   {
-    IsNameFound = ! strcmp(Name, (CHAR*)Module->szModule);
-    if (IsNameFound)
+    if (IsNameFound())
       ProcessPointer = Module->modBaseAddr;
-    
+
     HasModule = Module32Next(Snapshot, Module);
   }
 
