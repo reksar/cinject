@@ -1,28 +1,28 @@
-@ECHO OFF
+@echo off
 
-REM --- Required --------------------------------------------------------------
+rem --- Required --------------------------------------------------------------
 
-SET BIN_PATH=C:\path\to\git\usr\bin
-SET NASM_PATH=C:\path\to\nasm
+set BIN_PATH=C:\path\to\git\usr\bin
+set NASM_PATH=C:\path\to\nasm
 
-REM --- Optional --------------------------------------------------------------
+rem --- Optional --------------------------------------------------------------
 
-SET OUTDIR=build
+set OUTDIR=build
 
-REM --- Init ------------------------------------------------------------------
+rem --- Init ------------------------------------------------------------------
 
-IF NOT EXIST "%BIN_PATH%" (
-  ECHO Path to Git's usr\bin is invalid: "%BIN_PATH%".
-  EXIT /B 1
+if not exist "%BIN_PATH%" (
+  echo Path to Git's usr\bin is invalid: "%BIN_PATH%".
+  exit /b 1
 )
 
-IF NOT EXIST "%NASM_PATH%" (
-  ECHO NASM is not found at "%NASM_PATH%".
-  EXIT /B 2
+if not exist "%NASM_PATH%" (
+  echo NASM is not found at "%NASM_PATH%".
+  exit /b 2
 )
 
-SET PATH=%PATH%;%BIN_PATH%;%NASM_PATH%
+set PATH=%PATH%;%BIN_PATH%;%NASM_PATH%
 
-IF NOT EXIST "%OUTDIR%" (
-  MKDIR "%OUTDIR%" 2>NUL
+if not exist "%OUTDIR%" (
+  mkdir "%OUTDIR%" 2>NUL
 )

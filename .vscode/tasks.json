@@ -16,7 +16,6 @@
     ],
     "problemMatcher": []
   },
-
   {
     "label": "Assembly shellcode",
     "type": "shell",
@@ -27,7 +26,6 @@
     },
     "problemMatcher": []
   },
-
   {
     "label": "Generate shellcode",
     "type": "shell",
@@ -41,7 +39,6 @@
     },
     "problemMatcher": []
   },
-
   {
     "label": "Compile injector",
     "type": "shell",
@@ -54,7 +51,6 @@
     },
     "problemMatcher": []
   },
-
   {
     "label": "Compile test",
     "type": "shell",
