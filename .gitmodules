@@ -1,0 +1,3 @@
+[submodule "utils/vscmd"]
+	path = utils/vscmd
+	url = https://github.com/reksar/vscmd.git
