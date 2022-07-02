@@ -3,7 +3,7 @@
 The **x64** adaptation of **x86** version from 
 [https://xakep.ru/2015/08/12/code-injection](https://xakep.ru/2015/08/12/code-injection)
 
-Tested on Windows 10.
+Tested on Windows 10 with VS Build Tools 2022.
 
 # Install
 
@@ -15,7 +15,7 @@ Preferable IDE - [Visual Studio Code](https://code.visualstudio.com)
 
 * [Git for Windows](https://git-scm.com/download/win)
 * [NASM](https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/win64)
-* [Build Tools for Visual Studio](https://aka.ms/vs/17/release/vs_buildtools.exe)
+* [Visual Studio Build Tools](https://aka.ms/vs/17/release/vs_buildtools.exe)
     - MSVC 143 - VS 2022 C++ x64/x86 Build Tools
     - SDK for Windows 10 (10.0.20348.0)
 
@@ -30,4 +30,4 @@ in `.vscode\c_cpp_properties.json` to improve **IntelliSense** in **VS Code**.
 
 In **VS Code** run build task (`Ctrl+Shift+B`).
 
-Or build manually with `utils` using the info from `.vscode\tasks.json`.
+Or build manually with `utils` using info from `.vscode\tasks.json`.

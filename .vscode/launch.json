@@ -1,19 +1,17 @@
 {
-
-"version": "0.2.0",
-"configurations": [
-  {
-    "name": "Windows Debug",
-    "type": "cppvsdbg",
-    "request": "launch",
-    "preLaunchTask": "${defaultBuildTask}",
-    "cwd": "${workspaceFolder}/build",
-    "program": "${workspaceFolder}/build/injector.exe",
-    "args": [],
-    "environment": [],
-    "stopAtEntry": false,
-    "console": "externalTerminal"
-  }
-]
-
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Windows Debug",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "preLaunchTask": "${defaultBuildTask}",
+      "cwd": "${workspaceFolder}/build",
+      "program": "${workspaceFolder}/build/injector.exe",
+      "args": [],
+      "environment": [],
+      "stopAtEntry": false,
+      "console": "externalTerminal"
+    }
+  ]
 }

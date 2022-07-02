@@ -1,6 +1,6 @@
 /*
  * Test program from
- * https://xakep.ru/2015/08/12/code-injection/
+ * https://xakep.ru/2015/08/12/code-injection
  */
 
 #include <stdio.h>

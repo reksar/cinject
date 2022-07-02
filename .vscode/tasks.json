@@ -1,69 +1,67 @@
 {
-
-"version": "2.0.0",
-"tasks": [
-  {
-    "label": "Build with MSVC x64",
-    "group": {
-      "kind": "build",
-      "isDefault": true
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build with MSVC x64",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Build test",
+        "Generate shellcode header",
+        "Build injector"
+      ],
+      "problemMatcher": []
     },
-    "dependsOrder": "sequence",
-    "dependsOn": [
-      "Compile test",
-      "Generate shellcode",
-      "Compile injector"
-    ],
-    "problemMatcher": []
-  },
-  {
-    "label": "Assembly shellcode",
-    "type": "shell",
-    "command": "utils\\shellcode-assembly.bat",
-    "presentation": {
-      "showReuseMessage": false,
-      "group": "build"
+    {
+      "label": "Assembly shellcode",
+      "type": "shell",
+      "command": "utils\\shellcode-assembly.bat",
+      "presentation": {
+        "showReuseMessage": false,
+        "group": "build"
+      },
+      "problemMatcher": []
     },
-    "problemMatcher": []
-  },
-  {
-    "label": "Generate shellcode",
-    "type": "shell",
-    "command": "utils\\shellcode-generate.bat",
-    "dependsOn": [
-      "Assembly shellcode"
-    ],
-    "presentation": {
-      "showReuseMessage": false,
-      "group": "build"
+    {
+      "label": "Generate shellcode header",
+      "type": "shell",
+      "command": "utils\\shellcode-header.bat",
+      "dependsOn": [
+        "Assembly shellcode"
+      ],
+      "presentation": {
+        "showReuseMessage": false,
+        "group": "build"
+      },
+      "problemMatcher": []
     },
-    "problemMatcher": []
-  },
-  {
-    "label": "Compile injector",
-    "type": "shell",
-    "command": "utils\\compile.bat",
-    "args": [
-      "src\\injector.cpp"
-    ],
-    "presentation": {
-      "group": "build"
+    {
+      "label": "Build injector",
+      "type": "shell",
+      "command": "utils\\build.bat",
+      "args": [
+        "src\\injector.cpp"
+      ],
+      "presentation": {
+        "group": "build"
+      },
+      "problemMatcher": []
     },
-    "problemMatcher": []
-  },
-  {
-    "label": "Compile test",
-    "type": "shell",
-    "command": "utils\\compile.bat",
-    "args": [
-      "src\\test.cpp"
-    ],
-    "presentation": {
-      "showReuseMessage": false,
-      "group": "build"
-    },
-    "problemMatcher": []
-  }
-]
-
+    {
+      "label": "Build test",
+      "type": "shell",
+      "command": "utils\\build.bat",
+      "args": [
+        "src\\test.cpp"
+      ],
+      "presentation": {
+        "showReuseMessage": false,
+        "group": "build"
+      },
+      "problemMatcher": []
+    }
+  ]
 }

@@ -1,4 +1,2 @@
-build/*
-!build/.gitkeep
-
+build
 src/shellcode.h
