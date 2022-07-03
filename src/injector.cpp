@@ -7,9 +7,18 @@
 #include <Windows.h>
 #include <tlhelp32.h>
 
-// Can be generated manually with "Generate shellcode" VS Code task.
-// Will be automatically overwritten on build task.
+// Will be automatically overwritten by VS Code's "Generate shellcode header"
+// task during build.
 #include "shellcode.h"
+
+// This test program message will be overwritten by the current injector.
+const CHAR MESSAGE[] = "default message";
+
+// These offsets are reverse-engineered from the test program using a debugger.
+// They are sensitive to the build tools were used to build the test program.
+const DWORD64 MESSAGE_OFFSET = 0x2258;
+const DWORD64 FMT_OFFSET = 0x2240;
+const DWORD64 CALL_OFFSET = 0x1080;
 
 const SIZE_T SZ_EMPTY_LINE = 1; // LF (0x0A)
 const SIZE_T SZ_MESSAGE_MAX = 260;
@@ -26,7 +35,7 @@ struct ProcessEntry
 DWORD GetPID(const CHAR* Name)
 {
   const HANDLE Snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
-  const LPPROCESSENTRY32 Process = new PROCESSENTRY32{ sizeof(PROCESSENTRY32) };
+  const LPPROCESSENTRY32 Process = new PROCESSENTRY32{sizeof(PROCESSENTRY32)};
 
   const auto IsNameFound = [Name, Process] {
     const auto ProcessName = (CHAR*)Process->szExeFile;
@@ -50,7 +59,7 @@ DWORD GetPID(const CHAR* Name)
 LPVOID GetProcessPointer(const CHAR* Name, const DWORD PID)
 {
   const HANDLE Snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, PID);
-  const LPMODULEENTRY32 Module = new MODULEENTRY32{ sizeof(MODULEENTRY32) };
+  const LPMODULEENTRY32 Module = new MODULEENTRY32{sizeof(MODULEENTRY32)};
 
   const auto IsNameFound = [Name, Module] {
     const auto ModuleName = (CHAR*)Module->szModule;
@@ -76,13 +85,11 @@ ProcessEntry HandleProcess(const CHAR* Name)
   const auto PID = GetPID(Name);
   const auto Handle = OpenProcess(PROCESS_ALL_ACCESS, FALSE, PID);
   const auto Address = GetProcessPointer(Name, PID);
-  return ProcessEntry{ Name, PID, Handle, Address };
+  return ProcessEntry{Name, PID, Handle, Address};
 }
 
 BOOL CanReadDefaultMessage(ProcessEntry Process)
 {
-  const CHAR MESSAGE[] = "default message";
-  const DWORD64 MESSAGE_OFFSET = 0x2238;
   const BYTE szMessage = sizeof(MESSAGE);
   const LPVOID pMessage = (BYTE*)Process.Pointer + MESSAGE_OFFSET;
   CHAR Buffer[szMessage];
@@ -98,10 +105,6 @@ BOOL WriteShellcode(const ProcessEntry Process, const LPVOID pMemory)
 
 BOOL RewriteAddresses(const ProcessEntry Process, const LPVOID pMemory)
 {
-  // I run test.exe in x64dbg and find these offsets.
-  const DWORD64 FMT_OFFSET = 0x2220;
-  const DWORD64 CALL_OFFSET = 0x1080;
-
   const LPVOID pFmtAddress = (BYTE*)pMemory + FMT_ADDRESS_OFFSET;
   const LPVOID pMsgAddress = (BYTE*)pMemory + MSG_ADDRESS_OFFSET;
   const LPVOID pCallAddress = (BYTE*)pMemory + CALL_ADDRESS_OFFSET;
@@ -126,9 +129,8 @@ LPVOID Inject(const ProcessEntry Process)
   const auto pMemory = VirtualAllocEx(
     Process.Handle, nullptr, SZ_MEMORY, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 
-  return WriteShellcode(Process, pMemory)
-    && RewriteAddresses(Process, pMemory)
-      ? pMemory : nullptr;
+  return WriteShellcode(Process, pMemory) && RewriteAddresses(Process, pMemory)
+    ? pMemory : nullptr;
 }
 
 BOOL WriteMessage(
@@ -160,21 +162,31 @@ void RunShellcode(const ProcessEntry Process, const LPVOID pMemory)
 INT main()
 {
   const auto Process = HandleProcess("test.exe");
-  if (! (Process.PID && Process.Handle && Process.Pointer))
+
+  if (! (Process.PID && Process.Handle && Process.Pointer)) {
+    printf("Can't handle Windows process '%s'.\n", Process.Name);
     return 1;
+  }
   
   printf("%s at %p\n", Process.Name, Process.Pointer);
 
-  if (! CanReadDefaultMessage(Process))
+  if (! CanReadDefaultMessage(Process)) {
+    printf("Failed to read default message in '%s'.\n", Process.Name);
+    printf("The injector is probably using the bad address offset.\n");
     return 2;
+  }
 
   const auto pMemory = Inject(Process);
-  if (! pMemory)
+
+  if (! pMemory) {
+    printf("Failed to inject.\n");
     return 3;
+  }
   
   printf("Allocated %llu bytes at %p\n", SZ_MEMORY, pMemory);
 
   CHAR Message[SZ_MESSAGE_MAX];
+
   while (fgets(Message, SZ_MESSAGE_MAX, stdin)
       && (strlen(Message) > SZ_EMPTY_LINE)
       && WriteMessage(Message, Process, pMemory))

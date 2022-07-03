@@ -47,17 +47,18 @@ sub rsp, 16
 movdqu [rsp], xmm5
 
 ; -----------------------------------------------------------------------------
-; The shellcode payload.
-; Addresses 0xa*, 0xb*, 0xc* are stubs, that will be replaced during injection.
+; Shellcode payload.
+;
+; We can only use MOV RAX to set a 64-bit value (QWORD) into a register. So we
+; pass addresses into other registers through the RAX register.
+;
+; The first four int args are passed in RCX, RDX, R8 and R9 in that order.
+; Additional int args are passed on the stack. So calling `printf(fmt, msg)`
+; requires `&fmt` -> RCX and `&msg` -> RDX.
 ;
 ; See about 64-bit NASM at https://nasm.us/xdoc/2.15.03rc8/html/nasmdo12.html
 ;
-; If is needed to set a 64-bit value (QWORD) into register, we can use 
-; MOV RAX only. So we pass addresses to other registers through the RAX.
-;
-; The first four integer arguments are passed in RCX, RDX, R8 and R9, 
-; in that order. Additional integer arguments are passed on the stack.
-; So calling `printf(fmt, msg)` requires `&fmt` at RCX and `&msg` at RDX.
+; Note: 0x[a|b|c]*16 addresses are stubs that will be replaced during injection.
 
 mov rax, 0xaaaaaaaaaaaaaaaa ; "%s" fmt
 mov rcx, rax
@@ -69,6 +70,7 @@ mov rax, 0xcccccccccccccccc ; printf()
 call rax
 
 ; -----------------------------------------------------------------------------
+; Restore registers before return.
 
 movdqu xmm5, [rsp]
 add rsp, 16
