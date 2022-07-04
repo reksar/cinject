@@ -38,7 +38,7 @@ DWORD GetPID(const CHAR* Name)
   const LPPROCESSENTRY32 Process = new PROCESSENTRY32{sizeof(PROCESSENTRY32)};
 
   const auto IsNameFound = [Name, Process] {
-    const auto ProcessName = (CHAR*)Process->szExeFile;
+    const auto ProcessName = (CHAR*) Process->szExeFile;
     return ! strcmp(Name, ProcessName);
   };
 
@@ -62,7 +62,7 @@ LPVOID GetProcessPointer(const CHAR* Name, const DWORD PID)
   const LPMODULEENTRY32 Module = new MODULEENTRY32{sizeof(MODULEENTRY32)};
 
   const auto IsNameFound = [Name, Module] {
-    const auto ModuleName = (CHAR*)Module->szModule;
+    const auto ModuleName = (CHAR*) Module->szModule;
     return ! strcmp(Name, ModuleName);
   };
 
@@ -91,7 +91,7 @@ ProcessEntry HandleProcess(const CHAR* Name)
 BOOL CanReadDefaultMessage(ProcessEntry Process)
 {
   const BYTE szMessage = sizeof(MESSAGE);
-  const LPVOID pMessage = (BYTE*)Process.Pointer + MESSAGE_OFFSET;
+  const LPVOID pMessage = (BYTE*) Process.Pointer + MESSAGE_OFFSET;
   CHAR Buffer[szMessage];
   ReadProcessMemory(Process.Handle, pMessage, &Buffer, szMessage, nullptr);
   return ! strcmp(MESSAGE, Buffer);
@@ -105,9 +105,9 @@ BOOL WriteShellcode(const ProcessEntry Process, const LPVOID pMemory)
 
 BOOL RewriteAddresses(const ProcessEntry Process, const LPVOID pMemory)
 {
-  const LPVOID pFmtAddress = (BYTE*)pMemory + FMT_ADDRESS_OFFSET;
-  const LPVOID pMsgAddress = (BYTE*)pMemory + MSG_ADDRESS_OFFSET;
-  const LPVOID pCallAddress = (BYTE*)pMemory + CALL_ADDRESS_OFFSET;
+  const LPVOID pFmtAddress = (BYTE*) pMemory + FMT_ADDRESS_OFFSET;
+  const LPVOID pMsgAddress = (BYTE*) pMemory + MSG_ADDRESS_OFFSET;
+  const LPVOID pCallAddress = (BYTE*) pMemory + CALL_ADDRESS_OFFSET;
 
   const auto ProcessAddress = reinterpret_cast<DWORD64>(Process.Pointer);
   const auto FmtAddress = ProcessAddress + FMT_OFFSET;
@@ -139,21 +139,22 @@ BOOL WriteMessage(
   const LPVOID pMemory)
 {
   const auto szMessage = strlen(Message);
+
   if ((szMessage <= SZ_EMPTY_LINE) || (SZ_MESSAGE_MAX <= szMessage))
     return false;
 
   const CHAR Terminator = NULL;
   const auto szTerminator = sizeof(Terminator);
   const auto Handle = Process.Handle;
-  const LPVOID pMessage = (BYTE*)pMemory + SZ_SHELLCODE;
-  const LPVOID pTerminator = (BYTE*)pMessage + szMessage;
+  const LPVOID pMessage = (BYTE*) pMemory + SZ_SHELLCODE;
+  const LPVOID pTerminator = (BYTE*) pMessage + szMessage;
   return WriteProcessMemory(Handle, pMessage, Message, szMessage, NULL)
     && WriteProcessMemory(Handle, pTerminator, &Terminator, szTerminator, NULL);
 }
 
 void RunShellcode(const ProcessEntry Process, const LPVOID pMemory)
 {
-  const auto pStart = (LPTHREAD_START_ROUTINE)pMemory;
+  const auto pStart = (LPTHREAD_START_ROUTINE) pMemory;
   const auto hThread = CreateRemoteThread(
     Process.Handle, NULL, NULL, pStart, NULL, NULL, NULL);
   CloseHandle(hThread);
@@ -187,9 +188,11 @@ INT main()
 
   CHAR Message[SZ_MESSAGE_MAX];
 
-  while (fgets(Message, SZ_MESSAGE_MAX, stdin)
-      && (strlen(Message) > SZ_EMPTY_LINE)
-      && WriteMessage(Message, Process, pMemory))
+  while (
+    fgets(Message, SZ_MESSAGE_MAX, stdin)
+    && (strlen(Message) > SZ_EMPTY_LINE)
+    && WriteMessage(Message, Process, pMemory)
+  )
     RunShellcode(Process, pMemory);
 
   return NULL;
